@@ -1,0 +1,18 @@
+- name: Prepare OS.
+  hosts: all
+  tags: prepare
+  roles:
+    - prepare
+
+- name: Install k8s on terraform vms
+  tags: k8s
+  become: true
+  become_method: sudo
+  # become_flags: '-s /bin/bash'
+  ansible.builtin.import_playbook: k3s.orchestration.site
+
+- name: Upgrade local kubeconfig
+  hosts: server
+  tags: kubeconfig
+  roles:
+    - kubeconfig

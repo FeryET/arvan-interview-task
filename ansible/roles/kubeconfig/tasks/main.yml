@@ -1,0 +1,30 @@
+- name: Ensure local .kube directory exists
+  ansible.builtin.file:
+    path: ~/.kube
+    state: directory
+    mode: "0755"
+
+- name: Retrieve kubeconfig from the remote cluster
+  ansible.builtin.fetch:
+    src: /home/{{ ansible_user }}/.kube/config
+    dest: /tmp/remote_kubeconfig
+    flat: true
+
+- name: Update local kubeconfig
+  delegate_to: localhost
+  block:
+    - name: Update the copied kubeconfig
+      ansible.builtin.shell: |
+        set -euo pipefail;
+        cat /tmp/remote_kubeconfig | \
+          sed 's#default#k3s#g' | \
+          sed 's#127.0.0.1#{{ hostvars[groups['server'][0]].ansible_default_ipv4.address }}#g' | \
+          tee /home/$USER/.kube/k3s.config
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    - name: Clean up created files
+      ansible.builtin.file:
+        path: /tmp/remote_kubeconfig
+        state: absent

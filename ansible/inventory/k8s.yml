@@ -1,0 +1,33 @@
+---
+k3s_cluster:
+  children:
+    server:
+    agent:
+  vars:
+    k3s_version: v1.30.2+k3s1
+    token: "arvan-interview"
+    api_endpoint: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+    registries_config_yaml: |
+      mirrors:
+        docker.io:
+          endpoint:
+          - https://docker.arvancloud.ir
+        quay.io:
+          endpoint:
+          - https://quay.azk8s.cn
+        gcr.io:
+          endpoint:
+          - https://gcr.azk8s.cn
+        registry.k8s.io:
+          endpoint:
+          - https://k8s.m.daocloud.io
+
+
+server:
+  hosts:
+    vm1:
+
+agent:
+  hosts:
+    vm2:
+    vm3:

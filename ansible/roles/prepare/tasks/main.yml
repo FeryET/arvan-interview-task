@@ -1,0 +1,19 @@
+# To test if the connection is ok
+- name: Check connectivity.
+  block:
+    - name: Run hello-world
+      ansible.builtin.command: echo hello-world
+      register: hello_world
+      changed_when: false
+
+    - name: Print the hello-world output in ansible terminal session
+      ansible.builtin.debug:
+        msg: "{{ hello_world.stdout }}"
+
+# Kubespary depends on this folder
+- name: Create /etc/bash_completion.d
+  become: true
+  ansible.builtin.file:
+    path: /etc/bash_completion.d
+    state: directory
+    mode: "0755"
