@@ -17,9 +17,15 @@ locals {
     "vm3" : "192.168.122.102"
   }
   memory = {
-    "vm1" : "2000",
-    "vm2" : "1500",
-    "vm3" : "1500"
+    "vm1" : "4000",
+    "vm2" : "3000",
+    "vm3" : "3000"
+  }
+
+  cpus = {
+    "vm1": 2,
+    "vm2": 2,
+    "vm3": 2,
   }
 }
 
@@ -67,7 +73,7 @@ resource "libvirt_domain" "domain-debian" {
 
   name   = each.key
   memory = local.memory[each.key]
-  vcpu   = 1
+  vcpu   = local.cpus[each.key]
 
   cloudinit = libvirt_cloudinit_disk.init[each.key].id
 
