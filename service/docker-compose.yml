@@ -1,0 +1,46 @@
+name: "arvan-app"
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db
+    ports:
+      - "15432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/99-init.sql
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "--user", "postgres", "-d", "db"]
+      interval: 10s
+      start_period: 5s
+      retries: 3
+      timeout: 5s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: db
+      DB_TABLE_NAME: ip_cache
+      DB_MAX_OPEN_CONNS: 1024
+      DB_MAX_IDLE_CONNS: 512
+      DB_MAX_LIFETIME_SECS: 20
+      DB_MAX_IDLETIME_SECS: 10
+    ports:
+      - "3333:3333"
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+        required: true
+
+volumes:
+  db_data:
