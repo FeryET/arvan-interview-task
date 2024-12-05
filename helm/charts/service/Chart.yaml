@@ -1,0 +1,6 @@
+apiVersion: v2
+name: service
+description: A Helm Chart for the Service of the Interview Task
+type: application
+version: 1.0.0
+appVersion: 1.0.0

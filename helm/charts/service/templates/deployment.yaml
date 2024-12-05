@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arvan-app-deployment
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: arvan-app
+  template:
+    metadata:
+      labels:
+        app: arvan-app
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          ports:
+            - containerPort: {{ .Values.server.port }}
+          resources:
+            limits:
+              cpu: "{{ .Values.resources.cpus }}"
+              memory: "{{ .Values.resources.memory}}"
+            requests:
+              cpu: "{{ .Values.resources.cpus }}"
+              memory: "{{ .Values.resources.memory }}"
+          envFrom:
+            - configMapRef:
+                name: app-config

@@ -2,6 +2,8 @@ helmDefaults:
   cleanupOnFail: true
   createNamespace: true
   kubeContext: k3s
+  disableValidation: true
+
 
 releases:
   - name: prometheus-stack
@@ -27,3 +29,11 @@ releases:
       - "./values/postgres.yml"
     needs:
       - prometheus-stack
+
+  - name: service
+    namespace: production
+    chart: "./charts/service"
+    version: 1.0.0
+    needs:
+      - prometheus-stack
+      - postgresql

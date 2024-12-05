@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: arvan-app
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app: arvan-app
+spec:
+  selector:
+    app: arvan-app
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.server.port }}
+      targetPort: {{ .Values.server.port }}

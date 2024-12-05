@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgresql-init
+  namespace: "{{ .Release.Namespace }}"
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  # Only run once
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - name: postgres-init
+          image: docker.arvancloud.ir/bitnami/postgresql:17.2.0-debian-12-r1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: DB_PASSWORD
+                  name: app-config
+          command: ["psql"]
+          args:
+            - "-h"
+            - "{{ .Values.db.host }}"
+            - "-U"
+            - "{{ .Values.db.user }}"
+            - "-f"
+            - "/scripts/init-table.sql"
+          volumeMounts:
+            - name: init-table
+              mountPath: /scripts
+      restartPolicy: OnFailure
+      volumes:
+        - name: init-table
+          configMap:
+            name: init-table

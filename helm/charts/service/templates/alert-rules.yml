@@ -1,0 +1,49 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: arvan-app
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    role: alert-rules
+    release: prometheus-stack
+    app: arvan-app
+spec:
+  groups:
+    - name: app-rules
+      rules:
+        - alert: HttpLowRequestRate
+          expr: sum(rate(http_requests_total[5m])) by (path) < 2
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Low Request Rate Detected"
+            description: "Request rate on path `{{ "{{ $labels.path }}" }}` is lower than threshold with an RPS of `{{ "{{ $value }}" }}`."
+
+        - alert: HttpHighRequestRate
+          expr: sum(rate(http_requests_total[5m])) by (path) > 100
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High Request Rate Detected"
+            description: "Request rate on path `{{ "{{ $labels.path }}" }}` has exceeded the threshold with an RPS of `{{ "{{ $value }}" }}`."
+
+        - alert: HttpHighRequestDuration95thPercentile
+          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, path)) > 0.5
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High Request Duration - 95th Percentile"
+            description: "95th percentile of request duration on path `{{ "{{ $labels.path }}" }}` is above 500ms with a duration of `{{ "{{ $value }}" }}` seconds."
+
+        # Alert for high error rate
+        - alert: HttpHighErrorRate
+          expr: sum(rate(http_request_errors_total[5m])) by (path, error) / sum(rate(http_requests_total[5m])) by (path) > 0.05
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High Error Rate Detected"
+            description: "Error rate for path `{{ "{{ $labels.path }}" }}` with error `{{ "{{ $labels.error }}" }}` is greater than 5%."
