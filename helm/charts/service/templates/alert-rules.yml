@@ -5,7 +5,6 @@ metadata:
   namespace: "{{ .Release.Namespace }}"
   labels:
     role: alert-rules
-    release: prometheus-stack
     app: arvan-app
 spec:
   groups:
@@ -38,7 +37,6 @@ spec:
             summary: "High Request Duration - 95th Percentile"
             description: "95th percentile of request duration on path `{{ "{{ $labels.path }}" }}` is above 500ms with a duration of `{{ "{{ $value }}" }}` seconds."
 
-        # Alert for high error rate
         - alert: HttpHighErrorRate
           expr: sum(rate(http_request_errors_total[5m])) by (path, error) / sum(rate(http_requests_total[5m])) by (path) > 0.05
           for: 5m

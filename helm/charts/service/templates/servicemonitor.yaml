@@ -4,7 +4,6 @@ metadata:
   name: arvan-app
   namespace: "{{ .Release.Namespace }}"
   labels:
-    release: prometheus-stack
     app: arvan-app
 spec:
   selector:
