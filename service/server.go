@@ -25,7 +25,7 @@ var (
 			Name: "http_requests_total",
 			Help: "Total number of requests handled by the server",
 		},
-		[]string{"path"},
+		[]string{"path", "status"},
 	)
 	requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -35,10 +35,10 @@ var (
 		},
 		[]string{"path"},
 	)
-	requestErrors = prometheus.NewCounterVec(
+	webserviceErrors = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "http_request_errors_total",
-			Help: "Total number of error requests received",
+			Name: "http_request_webservice_errors_total",
+			Help: "Errors inside the webservice when handling an http request",
 		},
 		[]string{"path", "error"},
 	)
@@ -94,9 +94,9 @@ func writeSuccessResponse(w *http.ResponseWriter, body *ApiSuccessResponseData) 
 }
 
 // writeApiError writes the message and the error status code for an erroneus request.
-func writeApiError(w *http.ResponseWriter, errorMessage string) {
+func writeApiError(w *http.ResponseWriter, errorMessage string, errorStatusCode int) {
 	message, _ := json.Marshal(ApiErrorResponseData{errorMessage})
-	(*w).WriteHeader(http.StatusInternalServerError)
+	(*w).WriteHeader(errorStatusCode)
 	(*w).Write(message)
 }
 
@@ -173,14 +173,14 @@ func (h *ApiHandler) getIPCountryFromWeb(ip string) (*string, error) {
 func (h *ApiHandler) ipLocationHandler(w http.ResponseWriter, r *http.Request) {
 	timer := prometheus.NewTimer(requestDuration.WithLabelValues(r.URL.Path))
 	defer timer.ObserveDuration()
-	totalRequests.WithLabelValues(r.URL.Path).Inc()
 	h.logger.Infof("Received request: Method=%s, URL=%s, Headers=%v", r.Method, r.URL.String(), r.Header)
 	// X-Real-IP is the IP of the client
 	ip := r.Header.Get("X-Real-IP")
 	if !validateIp(&ip) {
 		h.logger.Errorf("Bad IP address given, returning error.")
-		requestErrors.WithLabelValues(r.URL.Path, "bad_ip").Inc()
-		writeApiError(&w, "bad ip address")
+		statusCode := http.StatusBadRequest
+		totalRequests.WithLabelValues(r.URL.Path, fmt.Sprint(statusCode)).Inc()
+		writeApiError(&w, "bad ip address", statusCode)
 		return
 	}
 	h.logger.Infof("checking if the ip is in cache for ip: %s", ip)
@@ -188,6 +188,7 @@ func (h *ApiHandler) ipLocationHandler(w http.ResponseWriter, r *http.Request) {
 	// If it was in cache, write the response and return
 	if err == nil {
 		h.logger.Infof("Ip %s was found in cache, returning the result.", ip)
+		totalRequests.WithLabelValues(r.URL.Path, fmt.Sprint(http.StatusOK)).Inc()
 		writeSuccessResponse(&w, &ApiSuccessResponseData{*country})
 		return
 	}
@@ -197,8 +198,10 @@ func (h *ApiHandler) ipLocationHandler(w http.ResponseWriter, r *http.Request) {
 	// if cannot get it from web, terminate the request and return error
 	if err != nil {
 		h.logger.Errorf("Cannot get the ip from web, got this error: %s", err)
-		requestErrors.WithLabelValues(r.URL.Path, "web_fetch_error").Inc()
-		writeApiError(&w, "internal error")
+		statusCode := http.StatusInternalServerError
+		webserviceErrors.WithLabelValues(r.URL.Path, "web_fetch_error").Inc()
+		totalRequests.WithLabelValues(r.URL.Path, fmt.Sprint(statusCode)).Inc()
+		writeApiError(&w, "internal error", statusCode)
 		return
 	}
 	// write it to db, then return the request
@@ -206,8 +209,9 @@ func (h *ApiHandler) ipLocationHandler(w http.ResponseWriter, r *http.Request) {
 	err = h.writeIpCountryToCache(ip, *country)
 	if err != nil {
 		h.logger.Errorf("Cannot write the data to db, got this error: %s", err)
-		requestErrors.WithLabelValues(r.URL.Path, "db_write_error").Inc()
+		webserviceErrors.WithLabelValues(r.URL.Path, "db_write_error").Inc()
 	}
+	totalRequests.WithLabelValues(r.URL.Path, fmt.Sprint(http.StatusOK)).Inc()
 	writeSuccessResponse(&w, &ApiSuccessResponseData{*country})
 }
 
@@ -242,7 +246,7 @@ func main() {
 	//// Init metrics
 	prometheus.MustRegister(totalRequests)
 	prometheus.MustRegister(requestDuration)
-	prometheus.MustRegister(requestErrors)
+	prometheus.MustRegister(webserviceErrors)
 
 	//// Init database connection
 	ctx := context.Background()

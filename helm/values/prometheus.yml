@@ -1,5 +1,9 @@
 prometheus:
-  serviceMonitorSelectorNilUsesHelmValues: false
+  prometheusSpec:
+    # Disable matching the release: prometheus-stack on service monitors
+    serviceMonitorSelectorNilUsesHelmValues: false
+    # Disable matching the release: prometheus-stack on prometheus rules
+    ruleSelectorNilUsesHelmValues: false
 alertmanager:
   enabled: false
 pushgateway:
