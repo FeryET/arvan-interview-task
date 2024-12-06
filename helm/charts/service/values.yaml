@@ -14,6 +14,6 @@ db:
   tableName: "ip_cache"
 
 image:
-  repository: docker.arvancloud.ir/feryet/arvan-service
-  tag: 0.1.0
+  repository: ghcr.io/feryet/arvan-interview-task/service
+  tag: 0.2.0
   pullPolicy: IfNotPresent

@@ -22,13 +22,14 @@ grafana:
           editable: true
           options:
             path: /var/lib/grafana/dashboards/grafana-dashboards-kubernetes
-        # - name: "arvan-interview-task-dashboards"
-        #   orgId: 1
-        #   folder: "Arvan"
-        #   disableDeletion: true
-        #   editable: true
-        #   options:
-        #     path: /var/lib/grafana/dashboards/arvan-interview-task
+        - name: "arvan-service-dashboards"
+          orgId: 1
+          folder: "Arvan Service"
+          type: file
+          disableDeletion: true
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/arvan-service-dashboards
   dashboards:
     grafana-dashboards-kubernetes:
       k8s-system-api-server:
@@ -49,9 +50,10 @@ grafana:
       k8s-views-pods:
         url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json
         token: ""
-    # arvan-interview-task-dashboards:
-    #   service-dashboard:
-    #     url:
+    arvan-service-dashboards:
+      arvan-app-dashboard:
+        url: https://raw.githubusercontent.com/FeryET/arvan-interview-task/refs/heads/main/helm/charts/service/files/dashboard.json
+        token: ""
 server:
   resources:
     limits:
