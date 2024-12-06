@@ -2,15 +2,19 @@
 
 FROM docker.arvancloud.ir/golang:1.21.5-bullseye AS builder
 
+ARG GOCACHE=/root/.cache/go-build
+
 WORKDIR /app
 
-COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,source=./go/go.sum,target=go.sum \
+    --mount=type=bind,source=./go/go.mod,target=go.mod \
+    go mod download -x
 
-RUN go mod download
-
-COPY *.go ./
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o /service
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=cache,target="${GOCACHE}" \
+    --mount=type=bind,source=./go,target=./ \
+    CGO_ENABLED=0 GOOS=linux go build -o /service
 
 FROM scratch
 
